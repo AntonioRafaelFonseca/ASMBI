@@ -1,0 +1,15 @@
+wr r2, 1
+wr r0, 0
+
+lbl hi:
+
+wr r0, 3
+syscall
+
+wr r0, 5
+syscall
+
+goto hi
+
+wr r0, 0
+syscall
