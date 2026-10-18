@@ -50,7 +50,7 @@ std::string readsimplifyCode(const char* filePath)
   {
     if(c=='#') stoped = 1;
     if(c=='\n') stoped = 0;
-    dest.append(1, c);
+    if(!stoped)  dest.append(1, c);
   }
   replaceStr(dest, "  ", "\n");
   replaceStr(dest, " ", "\n");

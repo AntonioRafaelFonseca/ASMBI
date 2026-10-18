@@ -6,7 +6,7 @@ typedef unsigned int word;
 
 struct MEMORY
 {
-  halfword *addrs = new halfword[0xffff];
+  halfword *addrs = new halfword[0x10000];
   halfword& at(int i);
 };
 

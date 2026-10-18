@@ -66,17 +66,29 @@ std::vector<std::string> getArrayString(std::string s)
     return outVec;
 }
 
-std::vector<token> tokenize(const char* filepath)
+std::vector<token> tokenize(const char* filepath, bool debugMode)
 {
     std::vector<token> outVec;
-    
     // Lê e simplifica o código
     std::string str = readsimplifyCode(filepath);
     std::vector<std::string> inVec = getArrayString(str);
+    if(debugMode)
+    {
+        system("cls");
+        std::cout << "\n============\nInstructions\n============\n";
+        for(auto s : inVec)
+        {
+            std::cout << "  " << s << "\n";
+        }
+        std::cout << "===========\n";
+    }
 
     for (size_t i = 0; i < inVec.size(); i++)
     {
         std::string& word = inVec.at(i);
+        if (word[0] == '0' && word[1] == 'x') word = std::to_string(std::stoi(word, 0, 16));
+        if (word[0] == '0' && word[1] == 'b') word = std::to_string(std::stoi(word, 0, 2));
+
         token t = getToken(word);
 
         if (t.type == LABEL)

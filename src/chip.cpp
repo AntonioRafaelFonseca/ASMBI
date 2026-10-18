@@ -9,7 +9,7 @@ word& REGISTERS::at(int i)
 }
 halfword& MEMORY::at(int i)
 {
-  if (i<0xffff && i>=0) return this->addrs[i];
+  if (i<0x10000 && i>=0) return this->addrs[i];
   std::cerr << "[->] ERROR: Invalid Memory Address:  " << i;
   exit(EXIT_FAILURE);
 }
@@ -44,15 +44,15 @@ void chip::syscall()
     }
   case SAVE_MEMORY:
   {
-    halfword value = readReg(r1) & 0x7fff; // reads only the 2 ls bytes from the r1 reg
-    word addr = readReg(r2) & 0x7fff;
+    halfword value = readReg(r1); // reads only the 2 ls bytes from the r1 reg
+    word addr = readReg(r2);
     this->mem.at(addr) = value;
     break;
   }
 
   case READ_MEMORY:
   {
-    word addr = readReg(r2) & 0x7fff;
+    word addr = readReg(r2);
     this->regs.at(r1) = this->mem.at(addr);
     break;
   }
