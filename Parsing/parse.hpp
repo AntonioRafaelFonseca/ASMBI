@@ -5,6 +5,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <bitset>
 
 struct LBL
 {
@@ -14,24 +15,33 @@ struct LBL
 
 std::vector<LBL> GlobalLabels;
 
-int findLabel(std::string s)
+int findLabel(std::string s, int tokenLocIndex)
 {
   for(auto l : GlobalLabels)
   {
     if (l.name == s) return l.pcIndex;
   }
-  std::cerr << "invalid label " << s;
-  exit(1);
+  if(s=="main")
+  {
+    std::cerr << "[ERROR] No main label found suggest adding \"lbl main\" at the start of the program";
+    exit(1);
+  }
+  else
+  {
+    std::cerr << "[ERROR] Token: " << std::bitset<16>(tokenLocIndex) << " - " << tokenLocIndex << " Invalid label '" << s << "'";
+    exit(1);
+  }
   return INT_MAX;
 }
 
-void replaceStr(std::string& c, const std::string a, const std::string b) {
-  if (a.empty()) return;
+std::string replaceStr(std::string& c, const std::string a, const std::string b) {
+  if (a.empty()) return "";
   size_t pos = c.find(a);
   while (pos != std::string::npos) {
       c.replace(pos, a.length(), b);
       pos = c.find(a, pos + b.length());
   }
+  return c;
 }
 
 std::string readsimplifyCode(const char* filePath)

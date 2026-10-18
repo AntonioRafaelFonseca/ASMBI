@@ -1,11 +1,16 @@
-wr rc, 1
-wr r0, 1
-wr r1, 0x00
-wr r2, 0xBFFD #addres
+lbl main:
+wr r2, 1
+
+wr r5, 100
+wr r1, 0
+lbl loop:
+
+add r1, r2
+
+wr r0, 9
 syscall
 
-lbl hello:
-goto hello
+glte r1, r5, loop
 
 wr r0, 0
 syscall

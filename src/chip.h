@@ -57,10 +57,18 @@ class chip
 enum OP_CODES
 {
   CEASE_PROGRAM,
+  
   SAVE_MEMORY,
   READ_MEMORY,
-  ADD,
-  SUB,
+
+  AND,
+  OR,
+  XOR,
+  NOT,
+
+  SHIFT_L,
+  SHIFT_R,
+  
   PRINT_INT,
   PRINT_CHAR
 };

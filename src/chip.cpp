@@ -4,13 +4,13 @@
 word& REGISTERS::at(int i)
 {
   if (i<16 && i>=0) return this->regs[i];
-  std::cerr << "[->] ERROR: Invalid Register Address:  " << i;
+  std::cerr << "[ERROR] Invalid Register Address:  " << i;
   exit(EXIT_FAILURE);
 }
 halfword& MEMORY::at(int i)
 {
   if (i<0x10000 && i>=0) return this->addrs[i];
-  std::cerr << "[->] ERROR: Invalid Memory Address:  " << i;
+  std::cerr << "[ERROR] Invalid Memory Address:  " << i;
   exit(EXIT_FAILURE);
 }
 
@@ -42,6 +42,7 @@ void chip::syscall()
       std::cout << "\n Program Finished";
       exit(0);
     }
+
   case SAVE_MEMORY:
   {
     halfword value = readReg(r1); // reads only the 2 ls bytes from the r1 reg
@@ -49,21 +50,49 @@ void chip::syscall()
     this->mem.at(addr) = value;
     break;
   }
-
   case READ_MEMORY:
   {
     word addr = readReg(r2);
     this->regs.at(r1) = this->mem.at(addr);
     break;
   }
-  case ADD:
+
+  case AND:
   {
-    this->regs.at(r1) = this->regs.at(r2) + this->regs.at(r3);
+    this->regs.at(r1) = this->regs.at(r2) & this->regs.at(r3);
     break;
   }
+  case OR:
+  {
+    this->regs.at(r1) = this->regs.at(r2) | this->regs.at(r3);
+    break;
+  }
+  case XOR:
+  {
+    this->regs.at(r1) = this->regs.at(r2) ^ this->regs.at(r3);
+    break;
+  }
+  case NOT:
+  {
+    this->regs.at(r1) = ~this->regs.at(r2);
+    break;
+  }
+
+  case SHIFT_L:
+  {
+    this->regs.at(r1) = this->regs.at(r2) << this->regs.at(r3);
+    break;
+  }
+  case SHIFT_R:
+  {
+    this->regs.at(r1) = this->regs.at(r2) >> this->regs.at(r3);
+    break;
+  }
+
+  
   case PRINT_INT:
   {
-    std::cout << (int)readReg(r1);
+    std::cout << static_cast<int>(readReg(r1)) << std::flush;
     break;
   }
   case PRINT_CHAR:
