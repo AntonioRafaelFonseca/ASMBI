@@ -1,75 +1,126 @@
 # ASMBI
 
-Assembly By an Idiot was made because MARS lacked decent support for input keys and MMIO, making game development difficult. The display was also cumbersome to work with, and MARS was written in Java wich is awfull.
+**Assembly By an Idiot** is a small assembly-like emulator written in C++. It includes a simple instruction set, a 16-bit memory space, console syscalls, and an optional Raylib display with memory-mapped input and clock values.
 
-### Compiling
+## Build
 
-`python compile.py`
+With Python and `g++` available, build from the repository root:
 
-*or*
+```powershell
+python .\compile.py
+```
 
-`g++ .\src\chip.cpp .\src\main.cpp -o main.exe -IC:\raylib\raylib\src -LC:\raylib\raylib\src -lraylib -lopengl32 -lgdi32 -lwinmm`
+Or compile directly (adjust the Raylib paths if Raylib is installed elsewhere):
 
-### Executing
+```powershell
+g++ .\src\chip.cpp .\src\main.cpp -o main.exe `
+  -IC:\raylib\raylib\src -LC:\raylib\raylib\src `
+  -lraylib -lopengl32 -lgdi32 -lwinmm
+```
 
-`.\main <target file> [/D] [/debug]`
+## Run
 
-#### Execution Args:
-* `[/D]` Display
-* `[/debug]` Debug mode. Clears the console and prints an indexed table of source tokens, their token types, and their source text before execution. The program's normal output is printed after the table.
+```powershell
+.\main.exe <program.asmbi> [/D] [/debug]
+```
 
-### Registers
+- `/D` opens the 128 × 64 display window, enlarged 3×.
+- `/debug` clears the console and shows a numbered table of source tokens and their token types before the program runs.
+- The flags can be supplied in either order.
 
-You have 16 registers available from `r0` to `rf`.
+## Registers
 
-* `r0`: Opcode register used for syscalls.
-* `r1` to `r4`: Argument registers for syscalls.
-* `r5` to `rb`, `rd`, `re`, `rf`: General purpose registers.
-* `rc`: Control register where the LSB clears the display.
+The emulator has sixteen 32-bit registers, named `r0` through `rf` (hexadecimal register names).
 
-### Instruction Set
+| Registers | Use |
+| --- | --- |
+| `r0` | Syscall number |
+| `r1`–`r4` | Syscall arguments and results |
+| `r5`–`rb`, `rd`–`rf` | General-purpose registers |
+| `rc` | Display control; a nonzero value makes the renderer use the background color for pixels |
 
-* `wr [dest_reg], [value or source_reg]`: Writes a value or the contents of a register into the destination register. Example: `wr r1, 10` or `wr r1, r2`.
-* `lbl [lbl_name]`: Defines a label position in your code.
-* `goto [lbl_name]`: Unconditional jump to a label.
-* `geq [reg1], [reg2], [lbl_name]`: Jumps to the label if `reg1` equals `reg2`.
-* `glt [reg1], [reg2], [lbl_name]`: Jumps if `reg1` is less than `reg2`.
-* `glte [reg1], [reg2], [lbl_name]`: Jumps if `reg1` is less than or equal to `reg2`.
-* `ggt [reg1], [reg2], [lbl_name]`: Jumps if `reg1` is greater than `reg2`.
-* `ggte [reg1], [reg2], [lbl_name]`: Jumps if `reg1` is greater than or equal to `reg2`.
-* `add [dest_reg], [value or source_reg]`: Adds a value or register to the destination register.
-* `sub [dest_reg], [value or source_reg]`: Subtracts a value or register from the destination register.
-* `mult [dest_reg], [value or source_reg]`: Multiplies the destination register by a value or register.
-* `div [dest_reg], [value or source_reg]`: Divides the destination register by a value or register.
-* `syscall`: Executes an operation based on the value stored in `r0`.
+`re` and `rf` are ordinary general-purpose registers. Register `rc` has the display behavior described above.
 
-Arithmetic operations are assembly instructions, not syscalls. For example, `add r1, r2` updates `r1` to `r1 + r2`.
+## Instructions
 
-### Syscalls
+Each instruction is written using its mnemonic, followed by operands separated by commas. Operands for arithmetic and conditional branches can be integer literals or registers where applicable.
 
-To run a syscall, place the operation code into `r0`, set your arguments in `r1` through `r4`, and call `syscall`.
+| Instruction | Example | Behavior |
+| --- | --- | --- |
+| `wr` | `wr r1, 42` | Writes a literal or another register's value to the destination register. |
+| `add` | `add r1, r2` | Adds the second operand to the destination register. |
+| `sub` | `sub r1, 2` | Subtracts the second operand from the destination register. |
+| `mult` | `mult r1, r2` | Multiplies the destination register by the second operand. |
+| `div` | `div r1, 2` | Divides the destination register by the second operand using integer division. |
+| `lbl` | `lbl loop:` | Defines a label that branches can target. |
+| `goto` | `goto loop` | Jumps unconditionally to a label. |
+| `geq` | `geq r1, r2, same` | Jumps if the operands are equal. |
+| `glt` | `glt r1, r2, less` | Jumps if the first operand is less than the second. |
+| `glte` | `glte r1, r2, done` | Jumps if the first operand is less than or equal to the second. |
+| `ggt` | `ggt r1, r2, more` | Jumps if the first operand is greater than the second. |
+| `ggte` | `ggte r1, r2, done` | Jumps if the first operand is greater than or equal to the second. |
+| `slp` | `slp 100` | Pauses for the specified number of milliseconds. |
+| `syscall` | `syscall` | Runs the operation selected by `r0`. |
 
-* `0` (CEASE_PROGRAM): Stops execution and exits the program.
-* `1` (SAVE_MEMORY): Saves the two least significant bytes from `r1` into the memory address stored in `r2`.
-* `2` (READ_MEMORY): Reads memory from the address stored in `r2` into `r1`.
-* `3`–`6`: Reserved.
-* `7` (AND): Performs a bitwise AND between `r2` and `r3`, storing the result in `r1`.
-* `8` (OR): Performs a bitwise OR between `r2` and `r3`, storing the result in `r1`.
-* `9` (XOR): Performs a bitwise XOR between `r2` and `r3`, storing the result in `r1`.
-* `10` (NOT): Performs a bitwise NOT on `r2`, storing the result in `r1`.
-* `11` (SHIFT_L): Shifts `r2` left by `r3` bits, storing the result in `r1`.
-* `12` (SHIFT_R): Shifts `r2` right by `r3` bits, storing the result in `r1`.
-* `13` (PRINT_INT): Prints the integer value of `r1` to the console without adding a newline.
-* `14` (PRINT_CHAR): Prints the ASCII character corresponding to the least significant byte of `r1`.
+Execution starts at the `main` label. Put setup instructions after `lbl main:` if they must run when the program starts. `#` begins a comment that continues to the end of the line.
 
-Example program that adds two values, prints the result, and exits:
+## Syscalls
+
+Set the syscall number in `r0`, provide any arguments in the registers below, and execute `syscall`.
+
+| `r0` | Name | Behavior |
+| ---: | --- | --- |
+| `0` | `CEASE_PROGRAM` | Ends the program. |
+| `1` | `SAVE_MEMORY` | Writes the low 16 bits of `r1` to the memory address in `r2`. |
+| `2` | `READ_MEMORY` | Reads the memory word at the address in `r2` into `r1`. |
+| `3` | `AND` | Stores `r2 & r3` in `r1`. |
+| `4` | `OR` | Stores `r2 \| r3` in `r1`. |
+| `5` | `XOR` | Stores `r2 ^ r3` in `r1`. |
+| `6` | `NOT` | Stores the bitwise complement of `r2` in `r1`. |
+| `7` | `SHIFT_L` | Stores `r2` shifted left by `r3` bits in `r1`. |
+| `8` | `SHIFT_R` | Stores `r2` shifted right by `r3` bits in `r1`. |
+| `9` | `PRINT_INT` | Prints the integer value in `r1` without adding a newline. |
+| `10` | `PRINT_CHAR` | Prints the character represented by the low byte of `r1`. |
+
+The arithmetic instructions (`add`, `sub`, `mult`, and `div`) are separate from the syscall numbers.
+
+## MEMORY
+
+Memory contains 65,536 addressable words. Each word is 16 bits wide. The clock, key input, and display use reserved addresses within this same memory space.
+
+### Main memory and system MMIO
+
+| Address | Name | Description |
+| --- | --- | --- |
+| `0x0000` | Clock counter | Increments once per emulator instruction step. It is a 16-bit word and wraps around on overflow. |
+| `0x0001` | Key input | Updated from Raylib's key queue on each instruction step; contains the key code, or `0` when no key is queued. |
+| `0x0002`–`0xBFFC` | General memory | Available for program data. |
+| `0xDFFE`–`0xFFFF` | General memory | Also addressable as program data; these locations are outside the visible framebuffer. |
+
+Programs can read or write memory with the `READ_MEMORY` and `SAVE_MEMORY` syscalls. The display window is optional; without `/D`, the memory and console syscalls are still available.
+
+### Display memory map
+
+Start the emulator with `/D` to open the display. Pixels use 16-bit RGB565 color values: 5 red bits, 6 green bits, and 5 blue bits.
+
+| Address | Name | Description |
+| --- | --- | --- |
+| `0xBFFD` | Background color | RGB565 color used for the display background when `rc` is nonzero. |
+| `0xBFFE`–`0xDFFD` | Framebuffer | 8,192 words for the 128 × 64 visible pixels, in row-major order. The first address is the top-left pixel. |
+| `0xDFFE`–`0xFFFD` | Outside visible framebuffer | The renderer scans this higher range but clips it because it is beyond the 64 visible rows. It remains part of addressable memory. |
+
+The display is refreshed as the program executes. Pixel `(x, y)` is stored at `0xBFFE + y * 128 + x`.
+
+## Example
+
+This program adds two values, prints the result, and exits:
 
 ```asm
 lbl main:
 wr r1, 5
 wr r2, 7
 add r1, r2
-wr r0, 13
+wr r0, 9
 syscall
 wr r0, 0
 syscall

@@ -9,7 +9,7 @@ add r1, r2
 
 wr r0, 9
 syscall
-
+slp 1000
 glte r1, r5, loop
 
 wr r0, 0

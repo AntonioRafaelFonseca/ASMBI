@@ -31,7 +31,9 @@ enum TOKEN_TYPE
   REGISTER,
   
   COMMA,
-  COLON
+  COLON,
+
+  SLEEP
 };
 std::string GetTokenTypeSTR(TOKEN_TYPE t)
 {
@@ -60,6 +62,7 @@ std::string GetTokenTypeSTR(TOKEN_TYPE t)
 
     case COMMA:        return "COMMA";
     case COLON:        return "COLON";
+    case SLEEP:        return "SLEEP";
 
     default:           return "UNKNOWN TOKEN";
     }
@@ -105,9 +108,10 @@ token getToken(std::string s)
   else if(s == "add") return {ADD, 0};
   else if(s == "sub") return {SUB, 0};
   else if(s == "mult") return {MULT, 0};
+  else if(s == "sleep") return {MULT, 0};
   else if(s == "div") return {DIV, 0};
 
-  else if(s == ",") return {COMMA, 0};
+  else if(s == "slp") return {SLEEP, 0};
   else if(s == ":") return {COLON, 0};
   else if(s.at(0) == 'r') return {REGISTER, getReg(s)};
   else if(s.find_first_not_of("0123456789") == std::string::npos) return {INT_LITERAL, 0};

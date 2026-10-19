@@ -1,4 +1,6 @@
 #pragma once
+#include <thread>
+#include <chrono>
 #include <raylib.h>
 #include <stdlib.h>
 
@@ -102,7 +104,8 @@ void execute(const char* filepath, chip& destChip,bool display,bool debugMode)
         }
 
     token current = tokens.at(pc);
-    if(current.type == GOTO) pc = current.value;
+    if(current.type == SLEEP) {std::this_thread::sleep_for(std::chrono::milliseconds(GetTokenValue(tokens.at(pc+1), destChip)));pc+=1;}
+    else if(current.type == GOTO) pc = current.value;
 
     else if(current.type == GOTO_EQ || current.type == GOTO_GT || current.type == GOTO_GT_EQ || current.type == GOTO_LT || current.type == GOTO_LT_EQ)
     {
