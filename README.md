@@ -1,6 +1,6 @@
 # ASMBI
 
-**Assembly By an Idiot** is a small assembly-like emulator written in C++. It has a simple assembly language, 32-bit registers, 16-bit memory, console syscalls, a step counter, and an optional Raylib display with memory-mapped keyboard input.
+**Assembly By an Idiot** is a small assembly-like emulator written in C++. It provides a compact assembly language, sixteen 32-bit registers, 65,536 words of 16-bit memory, console and bitwise syscalls, a memory-mapped instruction counter, and an optional Raylib display with keyboard input.
 
 ## Build
 
@@ -25,9 +25,10 @@ g++ .\src\chip.cpp .\src\main.cpp -o main.exe `
 ```
 
 - `/D` opens the 128 × 64 display window, enlarged 4×.
-- `/debug` shows the compiled output tokens, their type and value, their output index, and the source text that produced them. It also lists label addresses.
+- `/debug` shows each compiled output token's index, type, value, and source text, along with the addresses assigned to labels. It also enables Raylib's trace messages.
 - Supply exactly one program file. The `/D` and `/debug` flags can appear before or after it, in either order.
 - If the program file is missing, an option is unknown, or more than one file is supplied, the emulator prints an error and usage information.
+- Argument errors exit with status `2`; execution and input errors return a nonzero status.
 
 For example, both of these commands enable display and debug mode:
 
@@ -71,9 +72,9 @@ Each instruction is written using its mnemonic, followed by operands separated b
 | `slp` | `slp 100` | Pauses for the specified number of milliseconds. The duration can be a literal or register. |
 | `syscall` | `syscall` | Runs the operation selected by `r0`. |
 
-Execution starts at the `main` label. Put setup instructions after `lbl main:` if they must run when the program starts. `#` begins a comment that continues to the end of the line. A block comment starts with `/` and continues through the next `\`.
+Execution starts at the required `main` label, regardless of where it appears in the source file. Labels use the form `lbl name:` and must be unique. Put setup instructions after `lbl main:` if they must run when the program starts. `#` begins a comment that continues to the end of the line. A block comment starts with `/` and continues through the next `\`.
 
-Conditional branches compare unsigned 32-bit values. Invalid instruction operands, labels, register names, or integer literals are reported before execution starts. Runtime errors are reported to the console and return a failing process exit code.
+Conditional branches compare unsigned 32-bit values. Arithmetic wraps modulo 2^32. The tokenizer validates instruction operands, label declarations and references, register names, and integer literals before execution. Invalid input is reported to the console; runtime errors such as division by zero, an invalid syscall, or an invalid shift stop execution with a failing process exit code.
 
 ## Syscalls
 
@@ -93,8 +94,9 @@ Set the syscall number in `r0`, provide any arguments in the registers below, an
 | `9` | `PRINT_INT` | Prints the integer value in `r1` without adding a newline. |
 | `10` | `PRINT_CHAR` | Prints the character represented by the low byte of `r1`. |
 
-The arithmetic instructions (`add`, `sub`, `mult`, and `div`) are separate from the syscall numbers.
-Syscall `0` ends the emulator loop cleanly so display resources are released. A syscall number outside `0`–`10`, or a bit-shift amount of 32 or more, reports an error and stops execution. Division by zero also reports an error and stops the current program.
+Memory reads return a 16-bit word in the 32-bit destination register; memory writes store the low 16 bits of the source register. Bitwise syscall results are 32-bit. The arithmetic instructions (`add`, `sub`, `mult`, and `div`) are separate from the syscall numbers.
+
+Syscall `0` ends the emulator loop cleanly so display resources are released. A syscall number outside `0`–`10`, or a bit-shift amount of 32 or more, reports an error and stops execution. Division by zero also reports an error and stops the current program. Integer and character output is flushed immediately; neither print syscall adds a newline.
 
 ## MEMORY
 
@@ -105,23 +107,27 @@ Memory contains 65,536 addressable words. Each word is 16 bits wide. The clock, 
 | Address | Name | Description |
 | --- | --- | --- |
 | `0x0000` | Clock counter | A zero-initialized 16-bit value that increments once per executed instruction and wraps around on overflow. |
-| `0x0001` | Key input | Updated each instruction from the keys currently held; contains the first matching key code or `0` if none is held. |
+| `0x0001` | Key input | With the display enabled, polled each instruction; contains the first matching held-key code or `0` if none of the supported keys is held. |
 | `0x0002`–`0xBFFC` | General memory | Available for program data. |
 | `0xFFFE`–`0xFFFF` | General memory | Addressable program data not scanned by the display renderer. |
 
-All 65,536 addresses (`0x0000`–`0xFFFF`) are valid. Memory starts at zero. Programs can read or write memory with `READ_MEMORY` and `SAVE_MEMORY`. Without `/D`, clock and memory operations still work; the key input value is `0`.
+All 65,536 addresses (`0x0000`–`0xFFFF`) are valid, and memory starts at zero. The clock increments once for each executed instruction and wraps as a 16-bit value. Programs can read or write memory with `READ_MEMORY` and `SAVE_MEMORY`. Without `/D`, display drawing and update instructions are ignored and the key input remains `0`.
 
 ### Display memory map
 
-Start the emulator with `/D` to open the display. Pixels use 16-bit RGB565 color values: 5 red bits, 6 green bits, and 5 blue bits.
+Start the emulator with `/D` to open the display, which is targeted at 60 FPS. Pixels use 16-bit RGB565 color values: 5 red bits, 6 green bits, and 5 blue bits.
 
 | Address | Name | Description |
 | --- | --- | --- |
 | `0xBFFD` | Background color | RGB565 color used for zero-valued pixels when `rc` is nonzero. |
 | `0xBFFE`–`0xDFFD` | Framebuffer | 8,192 words for the 128 × 64 visible pixels, in row-major order. The first address is the top-left pixel. |
-| `0xDFFE`–`0xFFFD` | Outside visible framebuffer | Still scanned by the renderer, but clipped because these addresses lie below the visible 64 rows. They remain ordinary addressable memory. |
+| `0xDFFE`–`0xFFFD` | Outside visible framebuffer | Still scanned by the renderer, but clipped because these addresses map beyond the visible 64 rows. They remain ordinary addressable memory. |
 
-Pixel `(x, y)` is stored at `0xBFFE + y * 128 + x`. Pixel words use RGB565 color: 5 red bits, 6 green bits, and 5 blue bits. The display refreshes while the program runs; closing its window stops execution. Supported held-key codes are digits `0`–`9`, letters `A`–`F`, space, and the arrow keys (Raylib key codes).
+Pixel `(x, y)` is stored at `0xBFFE + y * 128 + x`. Pixel words use RGB565 color: 5 red bits, 6 green bits, and 5 blue bits. `DRAW` reads framebuffer memory, updates the texture, and presents it. `UPDATE` presents the current texture without rereading framebuffer memory; issue `DRAW` after changing pixels to refresh them. With `rc` set to nonzero, zero-valued pixels show the background color from `0xBFFD`; otherwise zero-valued pixels are skipped. Consequently, clearing a pixel to zero while `rc` is zero may leave its previous color visible until the image buffer is reset (for example, by enabling background rendering); this is a current renderer limitation. Closing the display window stops execution. Supported key codes are digits `0`–`9`, letters `A`–`F`, space, and the arrow keys (Raylib key codes).
+
+## Debugging and errors
+
+Use `/debug` to inspect the tokenizer's generated instruction stream and resolved labels before execution. The emulator reports invalid registers, malformed instructions and labels, out-of-range literals, invalid syscalls, invalid shift amounts, and division by zero. A missing or unreadable source file is also reported. Parser/input errors terminate with a nonzero process status; invalid command-line arguments use status `2`.
 
 ## Example
 
