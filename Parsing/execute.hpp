@@ -3,15 +3,16 @@
 #include <chrono>
 #include <raylib.h>
 #include <stdlib.h>
+#include <bits/stdc++.h>
 
 #include "tokenize.hpp"
 #include "../src/chip.h"
 
-#define DISPLAY_SCALE 3
+#define DISPLAY_SCALE 4
 
-unsigned long long pc = 0;
+inline unsigned long long pc = 0;
 
-Color GetColorFrom16Bit(halfword h)
+inline Color GetColorFrom16Bit(halfword h)
 {
   int r5 = (h >> 11) & 0x1F; // 5 bits for Red
   int g6 = (h >> 5)  & 0x3F; // 6 bits for Green
@@ -25,194 +26,273 @@ Color GetColorFrom16Bit(halfword h)
   return {r, g, b, 255};
 }
 
-int GetTokenValue(token t, chip& c)
+inline word GetTokenValue(const token& t, chip& c)
 {
-    int val = 0;
-    if (t.type == INT_LITERAL) {
-        val = t.value;
-    } else if (t.type == REGISTER) {
-        val = c.readReg(static_cast<REGISTER_INDEX>(t.value));
+    if (t.type == INT_LITERAL)
+        return t.value;
+    if (t.type == REGISTER)
+        return c.readReg(static_cast<REGISTER_INDEX>(t.value));
+    return 0;
+}
+inline const std::vector<int> keys = {
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    32,
+    264,
+    265,
+    263,
+    262
+};
+
+inline int GetKeyDown()
+{
+    for(size_t i = 0; i < keys.size(); i++)
+    {
+        if(IsKeyDown(keys.at(i))) return keys.at(i);
     }
-    return val;
+    return 0;
 }
 
-void execute(const char* filepath, chip& destChip,bool display,bool debugMode)
+const size_t startAddr = 0xBFFE;
+const size_t endAddr = 0xFFFE;
+
+Image imgBuff{};
+Texture txtureBuff{};
+
+inline int updateDisp(bool debugMode)
 {
-  std::vector<token> tokens = tokenize(filepath, debugMode);
 
-  word destValue = 0;
-  word destReg = 0;
-
-  size_t startAddr = 0xBFFE;
-  size_t endAddr = 0xFFFE;
-  size_t bytesToCopy = endAddr - startAddr;
-
-  Image imgBuff;
-  Texture txtureBuff;
-
-  if(display)
-  {
-      startAddr = 0xBFFE;
-      endAddr = 0xFFFE;
-      bytesToCopy = endAddr - startAddr;
-    
-      imgBuff;
-      imgBuff.width = 128;
-      imgBuff.height = 64;
-      imgBuff.mipmaps = 1;
-      imgBuff.format = PIXELFORMAT_UNCOMPRESSED_R5G6B5;
-    
-      imgBuff.data = RL_MALLOC(bytesToCopy);
-    
-      txtureBuff = LoadTextureFromImage(imgBuff);
-  }
-  
-  for(pc=findLabel("main", 0);pc<tokens.size();pc+=0)
-  {
-        pc++;
-        destChip.mem.at(0)++;
-        destChip.mem.at(1) = GetKeyPressed();
-
-        if(display && !WindowShouldClose())
+    BeginDrawing();
+    DrawTextureEx(txtureBuff, { 0, 0 }, 0.f, DISPLAY_SCALE, WHITE);
+    if(debugMode) SetWindowTitle(
+        (("ASMBI Display - FPS: " +
+            std::to_string(GetFPS())).c_str()
+        ));
+    EndDrawing();
+    return WindowShouldClose();
+}
+inline int drawDisplay(bool display, chip& destChip, bool debugMode)
+{
+        if (WindowShouldClose())
         {
-            for(int a = startAddr; a < endAddr; a++)
+            std::cout << "\nClosing Window\n";
+            return 1;
+        }
+
+        if (destChip.regs.at(rc) != 0x00)
+        {
+            halfword hlw = destChip.mem.at(0xBFFD);
+            Color cl = GetColorFrom16Bit(hlw);
+            ImageDrawRectangle(&imgBuff, 0, 0, imgBuff.width, imgBuff.height, cl);
+        }
+
+        for (size_t a = startAddr; a < endAddr; a++)
+        {
+            halfword hw = destChip.mem.at(a);
+            if(hw==0) continue;
+            Color c = GetColorFrom16Bit(hw);
+
+            size_t pixelIndex = a - startAddr;
+            int x = pixelIndex % 128;
+            int y = pixelIndex / 128;
+
+            if (x < 128 && y < 64)
+                ImageDrawPixel(&imgBuff, x, y, c);
+        }
+
+        UpdateTexture(txtureBuff, imgBuff.data);
+
+        BeginDrawing();
+        DrawTextureEx(txtureBuff, { 0, 0 }, 0.f, DISPLAY_SCALE, WHITE);
+        if(debugMode) SetWindowTitle(
+            (("ASMBI Display - FPS: " +
+                std::to_string(GetFPS())).c_str()
+            ));
+        EndDrawing();
+    return 0;
+}
+
+inline bool execute(const char* filepath, chip& destChip, bool display, bool debugMode)
+{
+    std::vector<token> tokens = tokenize(filepath, debugMode);
+
+
+    if (display)
+    {
+        imgBuff.width = 128;
+        imgBuff.height = 64;
+        imgBuff.mipmaps = 1;
+        imgBuff.format = PIXELFORMAT_UNCOMPRESSED_R5G6B5;
+        imgBuff.data = RL_CALLOC(128 * 64, sizeof(halfword));
+        if (imgBuff.data == nullptr)
+        {
+            std::cerr << "\n[ERROR] Could not allocate the display framebuffer\n";
+            return false;
+        }
+
+        txtureBuff = LoadTextureFromImage(imgBuff);
+        if (txtureBuff.id == 0)
+        {
+            std::cerr << "\n[ERROR] Could not create the display texture\n";
+            UnloadImage(imgBuff);
+            return false;
+        }
+    }
+
+    pc = findLabel("main", 0);
+    bool executionSucceeded = true;
+    
+    while (pc < tokens.size())
+    {
+        destChip.mem.at(0)++;
+        destChip.mem.addrs[1] = GetKeyDown();
+        
+        token current = tokens.at(pc);
+        if(display)
+        {
+            if (current.type == DISPLAY_DRAW)
             {
-                halfword hw = destChip.mem.at(a);
-                Color c = GetColorFrom16Bit(hw);
+                if (drawDisplay(display, destChip, debugMode) == 1) break;
+            }
+            else if (current.type == DISPLAY_UPDATE)
+            {
+                if (updateDisp(debugMode) == 1) break;
+            }
+        }
+        if (current.type == SLEEP)
+        {
+            if (pc + 1 < tokens.size())
+            {
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(
+                        GetTokenValue(tokens.at(pc + 1), destChip)
+                    )
+                );
 
-                if(destChip.regs.at(rc) != 0x00)
+                pc += 2;
+            }
+            else
+            {
+                pc++;
+            }
+        }
+        else if (current.type == GOTO)
+        {
+            pc = current.value;
+        }
+        else if (
+            current.type == GOTO_EQ ||
+            current.type == GOTO_NOT_EQ ||
+            current.type == GOTO_GT ||
+            current.type == GOTO_GT_EQ ||
+            current.type == GOTO_LT ||
+            current.type == GOTO_LT_EQ)
+        {
+
+            if (pc + 3 >= tokens.size())
+                break;
+
+            bool condition = false;
+
+            word val1 = GetTokenValue(tokens.at(pc + 1), destChip);
+            word val2 = GetTokenValue(tokens.at(pc + 3), destChip);
+
+            if (current.type == GOTO_EQ)
+                condition = (val1 == val2);
+
+            else if (current.type == GOTO_NOT_EQ)
+                condition = (val1 != val2);
+
+            else if (current.type == GOTO_GT)
+                condition = (val1 > val2);
+
+            else if (current.type == GOTO_GT_EQ)
+                condition = (val1 >= val2);
+
+            else if (current.type == GOTO_LT)
+                condition = (val1 < val2);
+
+            else if (current.type == GOTO_LT_EQ)
+                condition = (val1 <= val2);
+
+            if (condition)
+                pc = current.value;
+            else
+                pc += 4;
+        }
+        else if (current.type == SYSCALL)
+        {
+            const SYSCALL_RESULT result = destChip.syscall();
+            if (result == SYSCALL_RESULT::ERROR)
+            {
+                executionSucceeded = false;
+                break;
+            }
+            if (result == SYSCALL_RESULT::HALT)
+                break;
+            pc++;
+        }
+        else if (current.type == WRITE_REG ||
+                 current.type == ADD ||
+                 current.type == SUB ||
+                 current.type == MULT ||
+                 current.type == DIV)
+        {
+            if (pc + 3 >= tokens.size())
+                break;
+
+            REGISTER_INDEX regIndex =
+                static_cast<REGISTER_INDEX>(tokens.at(pc + 1).value);
+
+            word val =
+                GetTokenValue(tokens.at(pc + 3), destChip);
+
+            if (current.type == WRITE_REG)
+                destChip.writeReg(regIndex, val);
+            else if (current.type == ADD)
+                destChip.regs.at(regIndex) += val;
+            else if (current.type == SUB)
+                destChip.regs.at(regIndex) -= val;
+            else if (current.type == MULT)
+                destChip.regs.at(regIndex) *= val;
+            else if (current.type == DIV)
+            {
+                if (val != 0)
+                    destChip.regs.at(regIndex) /= val;
+                else
                 {
-                    halfword hlw = destChip.mem.at(0xBFFD);
-                    Color cl = GetColorFrom16Bit(hlw);
-                    if( c.a == 255 ) c = cl;
-                }
-                size_t pixelIndex = a - startAddr;
-                int x = pixelIndex % 128;
-                int y = pixelIndex / 128;
-
-                if (x < 128 && y < 64) {
-                    ImageDrawPixel(&imgBuff, x, y, c);
+                    std::cerr << "\n[ERROR] Division by zero\n";
+                    executionSucceeded = false;
+                    break;
                 }
             }
 
-            // Atualiza os dados da textura existente em vez de criar uma nova a cada frame
-            UpdateTexture(txtureBuff, imgBuff.data);
-
-            BeginDrawing();
-            DrawTextureEx(txtureBuff, {0, 0}, 0.f, DISPLAY_SCALE, WHITE);
-            EndDrawing();
+            pc += 4;
         }
-
-    token current = tokens.at(pc);
-    if(current.type == SLEEP) {std::this_thread::sleep_for(std::chrono::milliseconds(GetTokenValue(tokens.at(pc+1), destChip)));pc+=1;}
-    else if(current.type == GOTO) pc = current.value;
-
-    else if(current.type == GOTO_EQ || current.type == GOTO_GT || current.type == GOTO_GT_EQ || current.type == GOTO_LT || current.type == GOTO_LT_EQ)
-    {
-        bool condition = false;
-        int val1 = GetTokenValue(tokens.at(pc+1), destChip);
-        int val2 = GetTokenValue(tokens.at(pc+3), destChip);
-
-        if(current.type == GOTO_EQ) condition = (val1 == val2);
-        else if(current.type == GOTO_GT) condition = (val1 > val2);
-        else if(current.type == GOTO_GT_EQ) condition = (val1 >= val2);
-        else if(current.type == GOTO_LT) condition = (val1 < val2);
-        else if(current.type == GOTO_LT_EQ) condition = (val1 <= val2);
-
-        if(condition) {
-            pc = current.value; // Salta para a label
-        } else {
-            pc += 3; // Salta os 3 tokens de argumentos (reg, vírgula, valor) para não os executar
+        else
+        {
+            pc++;
         }
     }
-    else if(current.type == SYSCALL) destChip.syscall();
 
-    else if(current.type == REGISTER) {
-      if(pc > 0 && tokens.at(pc-1).type == COMMA)
-          destValue = destChip.readReg(static_cast<REGISTER_INDEX>(current.value));
-
-      else if(pc > 0 && tokens.at(pc-1).type == WRITE_REG)
-          destReg = tokens.at(pc-1).value;
-    }
-
-    else if(current.type == INT_LITERAL) destValue = current.value;
-    else if (current.type == WRITE_REG)
+    if (display)
     {
-      // Formato esperado: wr [reg], [valor]
-      if (pc + 3 < tokens.size())
-      {
-          REGISTER_INDEX regIndex = static_cast<REGISTER_INDEX>(tokens.at(pc + 1).value);
-          
-          // O valor pode ser um literal inteiro ou o valor de outro registo
-          unsigned int val = 0;
-
-            val = GetTokenValue(tokens.at(pc+3), destChip);
-
-         destChip.writeReg(regIndex, val);
-          // Avança o 'pc' para saltar os tokens já consumidos desta instrução (reg, vírgula, valor)
-          pc += 3;
-      }
+        UnloadTexture(txtureBuff);
+        UnloadImage(imgBuff);
     }
-    else if (current.type == ADD)
-    {
-      // Formato esperado: add [reg], [valor]
-      if (pc + 3 < tokens.size())
-      {
-        REGISTER_INDEX regIndex = static_cast<REGISTER_INDEX>(tokens.at(pc + 1).value);
-          
-        // O valor pode ser um literal inteiro ou o valor de outro registo
-        unsigned int val = 0;
-        val = GetTokenValue(tokens.at(pc+3), destChip);
-        destChip.regs.at(regIndex) += val;
-          pc += 3;
-      }
-    }
-    else if (current.type == SUB)
-    {
-      // Formato esperado: sub [reg], [valor]
-      if (pc + 3 < tokens.size())
-      {
-        REGISTER_INDEX regIndex = static_cast<REGISTER_INDEX>(tokens.at(pc + 1).value);
-          
-        // O valor pode ser um literal inteiro ou o valor de outro registo
-        unsigned int val = 0;
-        val = GetTokenValue(tokens.at(pc+3), destChip);
-        destChip.regs.at(regIndex) -= val;
-          pc += 3;
-      }
-    }
-    else if (current.type == MULT)
-    {
-      // Formato esperado: mult [reg], [valor]
-      if (pc + 3 < tokens.size())
-      {
-        REGISTER_INDEX regIndex = static_cast<REGISTER_INDEX>(tokens.at(pc + 1).value);
-          
-        // O valor pode ser um literal inteiro ou o valor de outro registo
-        unsigned int val = 0;
-        val = GetTokenValue(tokens.at(pc+3), destChip);
-        destChip.regs.at(regIndex) *= val;
-          pc += 3;
-      }
-    }
-    else if (current.type == DIV)
-    {
-      // Formato esperado: div [reg], [valor]
-      if (pc + 3 < tokens.size())
-      {
-        REGISTER_INDEX regIndex = static_cast<REGISTER_INDEX>(tokens.at(pc + 1).value);
-          
-        // O valor pode ser um literal inteiro ou o valor de outro registo
-        unsigned int val = 0;
-        val = GetTokenValue(tokens.at(pc+3), destChip);
-        destChip.regs.at(regIndex) /= val;
-          pc += 3;
-      }
-    }
-  }
-  if(display)
-  {
-      UnloadTexture(txtureBuff);
-      UnloadImage(imgBuff);
-  }
+    return executionSucceeded;
 }

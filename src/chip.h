@@ -1,18 +1,21 @@
 #pragma once
 
+#include <array>
+#include <cstddef>
+
 typedef unsigned char byte;
 typedef unsigned short halfword;
 typedef unsigned int word;
 
 struct MEMORY
 {
-  halfword *addrs = new halfword[0x10000];
-  halfword& at(int i);
+  std::array<halfword, 0x10000> addrs{};
+  halfword& at(word i);
 };
 
 struct REGISTERS
 {
-  word regs[0x10] = { 0 };
+  std::array<word, 0x10> regs{};
   word& at(int i);
 };
 
@@ -34,11 +37,18 @@ enum REGISTER_INDEX
   ra, //
   rb, //
 
-  rc, // lsb is the clear displ bit  msb is the carry flag or smth
+  rc, // Enables the background color for zero-valued display pixels
 
   rd, //
-  re, //still gpr but with letters
-  rf,  //
+  re, // general-purpose register
+  rf, //
+};
+
+enum class SYSCALL_RESULT
+{
+  CONTINUE,
+  HALT,
+  ERROR
 };
 
 class chip
@@ -49,15 +59,14 @@ class chip
   REGISTERS regs;
   void writeReg(REGISTER_INDEX reg, word value);
   word readReg(REGISTER_INDEX reg);
-  void syscall();
+  SYSCALL_RESULT syscall();
   void tick();
-  ~chip();
 };
 
 enum OP_CODES
 {
   CEASE_PROGRAM,
-  
+
   SAVE_MEMORY,
   READ_MEMORY,
 
@@ -68,7 +77,7 @@ enum OP_CODES
 
   SHIFT_L,
   SHIFT_R,
-  
+
   PRINT_INT,
   PRINT_CHAR
 };

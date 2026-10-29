@@ -1,16 +1,53 @@
 lbl main:
-wr r2, 1
 
-wr r5, 100
+wr rc, 1
+wr rd, 64
+wr re, 0x74d9
+wr rf, 1
+
+lbl mainLoop:
+
+UPDATE
+
+wr r5, rd
+add r5, 50430
 wr r1, 0
-lbl loop:
-
-add r1, r2
-
-wr r0, 9
+wr r2, r5
+wr r0, 1
 syscall
-slp 1000
-glte r1, r5, loop
 
+slp 500
+wr r2, 1
+wr r0, 2
+syscall
+
+geq r1, 263, subX
+geq r1, 262, addX
+goto drawPixel
+
+lbl addX:
+geq rd, 127, drawPixel
+add rd, 1
+
+goto drawPixel
+
+lbl subX:
+glte rd, 0, drawPixel
+sub rd, 1
+
+goto drawPixel
+
+lbl drawPixel:
+wr r5, rd
+add r5, 50430
+wr r1, re
+wr r2, r5
+wr r0, 1
+syscall
+DRAW
+geq rf, 1, mainLoop
+goto end
+
+lbl end:
 wr r0, 0
 syscall

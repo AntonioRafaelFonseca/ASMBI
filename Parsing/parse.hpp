@@ -1,11 +1,14 @@
 #pragma once
 
 #include <iostream>
+#include <cstddef>
+#include <cstdlib>
 #include <string>
 #include <vector>
 #include <fstream>
 #include <sstream>
 #include <bitset>
+#include <iomanip>
 
 struct LBL
 {
@@ -13,28 +16,30 @@ struct LBL
   int pcIndex;
 };
 
-std::vector<LBL> GlobalLabels;
+inline std::vector<LBL> GlobalLabels;
 
-int findLabel(std::string s, int tokenLocIndex)
+inline int findLabel(std::string s, int tokenLocIndex, bool inVec=0)
 {
-  for(auto l : GlobalLabels)
+  for(std::size_t i = 0; i < GlobalLabels.size(); i++)
   {
-    if (l.name == s) return l.pcIndex;
+    auto l = GlobalLabels.at(i);
+    if (l.name == s && !inVec) return l.pcIndex;
+    if (l.name == s && inVec) return static_cast<int>(i);
   }
   if(s=="main")
   {
-    std::cerr << "[ERROR] No main label found suggest adding \"lbl main\" at the start of the program";
+    std::cerr << "\n[ERROR] No main label found suggest adding \"lbl main\" at the start of the program";
     exit(1);
   }
   else
   {
-    std::cerr << "[ERROR] Token: " << std::bitset<16>(tokenLocIndex) << " - " << tokenLocIndex << " Invalid label '" << s << "'";
+    std::cerr << "\n[ERROR] Token: " << std::bitset<16>(tokenLocIndex) << " - " << tokenLocIndex << " Invalid label '" << s << "'";
     exit(1);
   }
   return INT_MAX;
 }
 
-std::string replaceStr(std::string& c, const std::string a, const std::string b) {
+inline std::string replaceStr(std::string& c, const std::string a, const std::string b) {
   if (a.empty()) return "";
   size_t pos = c.find(a);
   while (pos != std::string::npos) {
@@ -44,23 +49,27 @@ std::string replaceStr(std::string& c, const std::string a, const std::string b)
   return c;
 }
 
-std::string readsimplifyCode(const char* filePath)
+inline std::string readsimplifyCode(const char* filePath)
 {
   std::ifstream file;
   file.open(filePath);
   if(!file.is_open())
   {
-    std::cerr << "[->] Could not open file: " << filePath;
+    std::cerr << "\n[->] Could not open file: " << filePath;
     exit(1);
   }
   std::string dest = "";
   char c;
   bool stoped = 0;
+  bool multilineStopped = 0;
   while (file.get(c))
   {
     if(c=='#') stoped = 1;
     if(c=='\n') stoped = 0;
-    if(!stoped)  dest.append(1, c);
+    if(c=='/') multilineStopped = 1;
+    if(c==92) multilineStopped = 0;
+
+    if(!(stoped || multilineStopped)) dest.append(1, c);
   }
   replaceStr(dest, "  ", "\n");
   replaceStr(dest, " ", "\n");
@@ -68,5 +77,8 @@ std::string readsimplifyCode(const char* filePath)
   replaceStr(dest, ":", "\n:");
   replaceStr(dest, ",", "\n,");
   replaceStr(dest, "\n\n", "\n");
+  replaceStr(dest, "/", "");
+  replaceStr(dest, "\\", "");
+  replaceStr(dest, "#", "");
   return dest;
 }

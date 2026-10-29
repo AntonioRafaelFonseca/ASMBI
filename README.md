@@ -1,6 +1,6 @@
 # ASMBI
 
-**Assembly By an Idiot** is a small assembly-like emulator written in C++. It includes a simple instruction set, a 16-bit memory space, console syscalls, and an optional Raylib display with memory-mapped input and clock values.
+**Assembly By an Idiot** is a small assembly-like emulator written in C++. It has a simple assembly language, 32-bit registers, 16-bit memory, console syscalls, a step counter, and an optional Raylib display with memory-mapped keyboard input.
 
 ## Build
 
@@ -24,26 +24,34 @@ g++ .\src\chip.cpp .\src\main.cpp -o main.exe `
 .\main.exe <program.asmbi> [/D] [/debug]
 ```
 
-- `/D` opens the 128 × 64 display window, enlarged 3×.
-- `/debug` clears the console and shows a numbered table of source tokens and their token types before the program runs.
-- The flags can be supplied in either order.
+- `/D` opens the 128 × 64 display window, enlarged 4×.
+- `/debug` shows the compiled output tokens, their type and value, their output index, and the source text that produced them. It also lists label addresses.
+- Supply exactly one program file. The `/D` and `/debug` flags can appear before or after it, in either order.
+- If the program file is missing, an option is unknown, or more than one file is supplied, the emulator prints an error and usage information.
+
+For example, both of these commands enable display and debug mode:
+
+```powershell
+.\main.exe .\main.asmbi /D /debug
+.\main.exe /debug /D .\main.asmbi
+```
 
 ## Registers
 
-The emulator has sixteen 32-bit registers, named `r0` through `rf` (hexadecimal register names).
+The emulator has sixteen 32-bit unsigned registers, named `r0` through `rf` (hexadecimal register names). Values wrap modulo 2^32 during arithmetic.
 
 | Registers | Use |
 | --- | --- |
 | `r0` | Syscall number |
 | `r1`–`r4` | Syscall arguments and results |
 | `r5`–`rb`, `rd`–`rf` | General-purpose registers |
-| `rc` | Display control; a nonzero value makes the renderer use the background color for pixels |
+| `rc` | Display control; when nonzero, zero-valued pixels are drawn using the background color |
 
-`re` and `rf` are ordinary general-purpose registers. Register `rc` has the display behavior described above.
+Register names use a lowercase `r` followed by one hexadecimal digit (`r0`–`r9`, `ra`–`rf`).
 
 ## Instructions
 
-Each instruction is written using its mnemonic, followed by operands separated by commas. Operands for arithmetic and conditional branches can be integer literals or registers where applicable.
+Each instruction is written using its mnemonic, followed by operands separated by commas. Integer literals can be decimal, hexadecimal (`0x`), or binary (`0b`), and must fit in 32 bits. Arithmetic and branch operands can be registers or integer literals.
 
 | Instruction | Example | Behavior |
 | --- | --- | --- |
@@ -55,14 +63,17 @@ Each instruction is written using its mnemonic, followed by operands separated b
 | `lbl` | `lbl loop:` | Defines a label that branches can target. |
 | `goto` | `goto loop` | Jumps unconditionally to a label. |
 | `geq` | `geq r1, r2, same` | Jumps if the operands are equal. |
+| `gneq` | `gneq r1, r2, different` | Jumps if the operands are not equal. |
 | `glt` | `glt r1, r2, less` | Jumps if the first operand is less than the second. |
 | `glte` | `glte r1, r2, done` | Jumps if the first operand is less than or equal to the second. |
 | `ggt` | `ggt r1, r2, more` | Jumps if the first operand is greater than the second. |
 | `ggte` | `ggte r1, r2, done` | Jumps if the first operand is greater than or equal to the second. |
-| `slp` | `slp 100` | Pauses for the specified number of milliseconds. |
+| `slp` | `slp 100` | Pauses for the specified number of milliseconds. The duration can be a literal or register. |
 | `syscall` | `syscall` | Runs the operation selected by `r0`. |
 
-Execution starts at the `main` label. Put setup instructions after `lbl main:` if they must run when the program starts. `#` begins a comment that continues to the end of the line.
+Execution starts at the `main` label. Put setup instructions after `lbl main:` if they must run when the program starts. `#` begins a comment that continues to the end of the line. A block comment starts with `/` and continues through the next `\`.
+
+Conditional branches compare unsigned 32-bit values. Invalid instruction operands, labels, register names, or integer literals are reported before execution starts. Runtime errors are reported to the console and return a failing process exit code.
 
 ## Syscalls
 
@@ -83,6 +94,7 @@ Set the syscall number in `r0`, provide any arguments in the registers below, an
 | `10` | `PRINT_CHAR` | Prints the character represented by the low byte of `r1`. |
 
 The arithmetic instructions (`add`, `sub`, `mult`, and `div`) are separate from the syscall numbers.
+Syscall `0` ends the emulator loop cleanly so display resources are released. A syscall number outside `0`–`10`, or a bit-shift amount of 32 or more, reports an error and stops execution. Division by zero also reports an error and stops the current program.
 
 ## MEMORY
 
@@ -92,12 +104,12 @@ Memory contains 65,536 addressable words. Each word is 16 bits wide. The clock, 
 
 | Address | Name | Description |
 | --- | --- | --- |
-| `0x0000` | Clock counter | Increments once per emulator instruction step. It is a 16-bit word and wraps around on overflow. |
-| `0x0001` | Key input | Updated from Raylib's key queue on each instruction step; contains the key code, or `0` when no key is queued. |
+| `0x0000` | Clock counter | A zero-initialized 16-bit value that increments once per executed instruction and wraps around on overflow. |
+| `0x0001` | Key input | Updated each instruction from the keys currently held; contains the first matching key code or `0` if none is held. |
 | `0x0002`–`0xBFFC` | General memory | Available for program data. |
-| `0xDFFE`–`0xFFFF` | General memory | Also addressable as program data; these locations are outside the visible framebuffer. |
+| `0xFFFE`–`0xFFFF` | General memory | Addressable program data not scanned by the display renderer. |
 
-Programs can read or write memory with the `READ_MEMORY` and `SAVE_MEMORY` syscalls. The display window is optional; without `/D`, the memory and console syscalls are still available.
+All 65,536 addresses (`0x0000`–`0xFFFF`) are valid. Memory starts at zero. Programs can read or write memory with `READ_MEMORY` and `SAVE_MEMORY`. Without `/D`, clock and memory operations still work; the key input value is `0`.
 
 ### Display memory map
 
@@ -105,11 +117,11 @@ Start the emulator with `/D` to open the display. Pixels use 16-bit RGB565 color
 
 | Address | Name | Description |
 | --- | --- | --- |
-| `0xBFFD` | Background color | RGB565 color used for the display background when `rc` is nonzero. |
+| `0xBFFD` | Background color | RGB565 color used for zero-valued pixels when `rc` is nonzero. |
 | `0xBFFE`–`0xDFFD` | Framebuffer | 8,192 words for the 128 × 64 visible pixels, in row-major order. The first address is the top-left pixel. |
-| `0xDFFE`–`0xFFFD` | Outside visible framebuffer | The renderer scans this higher range but clips it because it is beyond the 64 visible rows. It remains part of addressable memory. |
+| `0xDFFE`–`0xFFFD` | Outside visible framebuffer | Still scanned by the renderer, but clipped because these addresses lie below the visible 64 rows. They remain ordinary addressable memory. |
 
-The display is refreshed as the program executes. Pixel `(x, y)` is stored at `0xBFFE + y * 128 + x`.
+Pixel `(x, y)` is stored at `0xBFFE + y * 128 + x`. Pixel words use RGB565 color: 5 red bits, 6 green bits, and 5 blue bits. The display refreshes while the program runs; closing its window stops execution. Supported held-key codes are digits `0`–`9`, letters `A`–`F`, space, and the arrow keys (Raylib key codes).
 
 ## Example
 

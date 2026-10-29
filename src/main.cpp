@@ -1,5 +1,5 @@
 #include <iostream>
-#include <cstring>
+#include <string>
 #include "raylib.h"
 #include "chip.h"
 
@@ -9,22 +9,64 @@
 
 int main(int argc, char** argv)
 {
+  const char* programPath = nullptr;
+  bool displayFlag = false;
+  bool debugMode = false;
 
-  SetTraceLogLevel(5);
+  for (int i = 1; i < argc; ++i)
+  {
+    const std::string argument = argv[i];
+    if (argument == "/D")
+      displayFlag = true;
+    else if (argument == "/debug")
+      debugMode = true;
+    else if (!argument.empty() &&
+             (argument[0] == '/' || argument[0] == '-'))
+    {
+      std::cerr << "[ERROR] Unknown option: " << argument << '\n'
+                << "Usage: " << argv[0]
+                << " <program.asmbi> [/D] [/debug]\n";
+      return 2;
+    }
+    else if (programPath == nullptr)
+      programPath = argv[i];
+    else
+    {
+      std::cerr << "[ERROR] Only one program file may be specified\n"
+                << "Usage: " << argv[0]
+                << " <program.asmbi> [/D] [/debug]\n";
+      return 2;
+    }
+  }
+
+  if (programPath == nullptr)
+  {
+    std::cerr << "Usage: " << argv[0]
+              << " <program.asmbi> [/D] [/debug]\n";
+    return 2;
+  }
 
   chip c;
-  system("cls");
-    
-    std::cout << "========================================\nCompiling & Executing file: " << argv[1] << "\n========================================\n\n";
-    
-    // Verifica corretamente a flag /D usando strcmp e prevenindo segmentation fault
-    unsigned char displayFlag = ((argc > 2 && strcmp(argv[2], "/D") == 0) || (argc > 3 && strcmp(argv[3], "/D") == 0)) ? 0x01 : 0x00;
-    unsigned char debugMode = ((argc > 3 && strcmp(argv[3], "/debug") == 0) || (argc > 2 && strcmp(argv[2], "/debug") == 0)) ? 0x01 : 0x00;
-    
-    if(displayFlag) InitWindow(128 * DISPLAY_SCALE, 64 * DISPLAY_SCALE, "ASMBI Display");
+  std::cout << "========================================\n"
+            << "Compiling & Executing file: " << programPath
+            << "\n========================================\n\n";
 
-    execute(argv[1], c, displayFlag, debugMode);
-  
+  SetTraceLogLevel(debugMode ? 0 : 5);
+  if (displayFlag)
+  {
+    InitWindow(128 * DISPLAY_SCALE, 64 * DISPLAY_SCALE, "ASMBI Display");
+    SetTargetFPS(60);
+    if (!IsWindowReady())
+    {
+      std::cerr << "[ERROR] Could not initialize the display window\n";
+      return 1;
+    }
+  }
+
+  const bool executionSucceeded =
+      execute(programPath, c, displayFlag, debugMode);
+
+  if (displayFlag)
     CloseWindow();
-    return 0;
+  return executionSucceeded ? 0 : 1;
 }
