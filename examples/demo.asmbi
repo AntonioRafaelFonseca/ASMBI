@@ -1,0 +1,9 @@
+lbl main:
+wr r0, 9
+
+wr r1, rr
+add r1, rr
+syscall
+
+wr r0, 0
+syscall
