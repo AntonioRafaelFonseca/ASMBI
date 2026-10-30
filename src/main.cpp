@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <chrono>
+
 #include "raylib.h"
 #include "chip.h"
 
@@ -10,6 +12,10 @@
 int main(int argc, char** argv)
 {
   system("cls");
+  
+  srand(std::chrono::system_clock::now().time_since_epoch().count());
+
+  
   const char* programPath = nullptr;
   bool displayFlag = false;
   bool debugMode = false;

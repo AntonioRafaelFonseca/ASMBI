@@ -29,6 +29,8 @@ enum TOKEN_TYPE
     MULT,
     DIV,
 
+    MOD,
+
     INT_LITERAL,
     REGISTER,
 
@@ -65,6 +67,8 @@ inline std::string GetTokenTypeSTR(TOKEN_TYPE t)
     case MULT:         return "MULTIPLY";
     case DIV:          return "DIVIDE";
 
+    case MOD:          return "MOD";
+
     case INT_LITERAL:  return "INTEGER LITERAL";
     case REGISTER:     return "REGISTER";
 
@@ -95,6 +99,7 @@ inline int hexToBin(char ascii)
 
 inline unsigned int getReg(const std::string& s)
 {
+    if (s == "rr") return 16;
     if (s.size() != 2 || s[0] != 'r' || hexToBin(s[1]) < 0)
     {
         std::cerr << "\n[ERROR] Invalid register '" << s
@@ -157,6 +162,8 @@ inline token getToken(const std::string& s)
     else if(s == "sub")     return {SUB, 0};
     else if(s == "mult")    return {MULT, 0};
     else if(s == "div")     return {DIV, 0};
+
+    else if(s == "mod")     return {MOD, 0};
 
     else if(s == "slp")     return {SLEEP, 0};
     else if(s == "DRAW")     return {DISPLAY_DRAW, 0};
@@ -335,7 +342,7 @@ inline std::vector<token> tokenize(const char* filepath, bool debugMode)
             i += 5;
         }
         else if (t.type == WRITE_REG || t.type == ADD ||
-                 t.type == SUB || t.type == MULT || t.type == DIV)
+                 t.type == SUB || t.type == MULT || t.type == DIV || t.type == MOD)
         {
             if (i + 3 >= inVec.size() ||
                 getToken(inVec[i + 1]).type != REGISTER ||

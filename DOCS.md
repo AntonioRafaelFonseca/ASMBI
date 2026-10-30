@@ -137,6 +137,7 @@ All operands in the instruction table are required. For `wr`, arithmetic, and `s
 | `sub` | `sub register, value` | Subtracts the value from the destination register. |
 | `mult` | `mult register, value` | Multiplies the destination register by the value. |
 | `div` | `div register, value` | Integer-divides the destination register by the value. Division by zero is an error. |
+| `mod` | `mod register, value` | Integer modulo (c/c++ %) the destination register by the value.|
 | `lbl` | `lbl name:` | Defines a unique branch target. Labels do not execute as instructions. |
 | `goto` | `goto name` | Jumps unconditionally to a label. |
 | `geq` | `geq left, right, name` | Jumps when `left` equals `right`. |

@@ -15,7 +15,7 @@ struct MEMORY
 
 struct REGISTERS
 {
-  std::array<word, 0x10> regs{};
+  std::array<word, 0x11> regs{};
   word& at(int i);
 };
 
@@ -42,6 +42,8 @@ enum REGISTER_INDEX
   rd, //
   re, // general-purpose register
   rf, //
+
+  rr // random number when called
 };
 
 enum class SYSCALL_RESULT

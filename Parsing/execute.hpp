@@ -247,10 +247,12 @@ inline bool execute(const char* filepath, chip& destChip, bool display, bool deb
             pc++;
         }
         else if (current.type == WRITE_REG ||
-                 current.type == ADD ||
-                 current.type == SUB ||
-                 current.type == MULT ||
-                 current.type == DIV)
+                 current.type == ADD       ||
+                 current.type == SUB       ||
+                 current.type == MULT      ||
+                 current.type == MOD       ||
+                 current.type == DIV
+                )
         {
             if (pc + 3 >= tokens.size())
                 break;
@@ -269,6 +271,8 @@ inline bool execute(const char* filepath, chip& destChip, bool display, bool deb
                 destChip.regs.at(regIndex) -= val;
             else if (current.type == MULT)
                 destChip.regs.at(regIndex) *= val;
+            else if (current.type == MOD)
+                destChip.regs.at(regIndex) %= val;
             else if (current.type == DIV)
             {
                 if (val != 0)

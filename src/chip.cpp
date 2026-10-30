@@ -19,13 +19,16 @@ halfword& MEMORY::at(word i)
 
 void chip::writeReg(REGISTER_INDEX reg, word value)
 {
+  if(reg == rr) return;
   this->regs.at(static_cast<int>(reg)) = value;
 }
 
 word chip::readReg(REGISTER_INDEX reg)
 {
+  if(reg == rr) regs.at(rr) = rand() % 0xffffffff;
   return this->regs.at(static_cast<int>(reg));
 }
+
 void chip::tick() {this->mem.at(0)++;}
 
 SYSCALL_RESULT chip::syscall()
