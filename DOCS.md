@@ -1,6 +1,6 @@
 # ASMBI
 
-**Assembly By an Idiot** is a small assembly-like emulator written in C++. It provides a compact assembly language, sixteen 32-bit registers, 65,536 words of 16-bit memory, console and bitwise syscalls, a memory-mapped instruction counter, and an optional Raylib display with keyboard input.
+**Assembly By an Idiot** is a small assembly-like emulator written in C++. It provides sixteen 32-bit registers, a read-to-generate random-value register, 65,536 words of 16-bit memory, console and bitwise syscalls, a memory-mapped instruction counter, and an optional Raylib display with keyboard input.
 
 This document is the detailed reference for building and using the emulator and for writing `.asmbi` programs. The shorter [README](./README.md) provides the project overview.
 
@@ -8,6 +8,7 @@ This document is the detailed reference for building and using the emulator and 
 
 - [Requirements and build](#requirements-and-build)
 - [Run the emulator](#run-the-emulator)
+- [Execution model](#execution-model)
 - [Assembly source format](#assembly-source-format)
 - [Registers and values](#registers-and-values)
 - [Language instructions](#language-instructions)
@@ -60,6 +61,29 @@ The `asmbi.cmd` launcher runs the `main.exe` beside it and enables `/debug` auto
 | `/debug` | Prints the compiled token stream and label addresses before execution, and enables Raylib trace logging. |
 
 An omitted source path, unknown option, or second source path is rejected with usage information and exit status `2`. Runtime and source errors return a nonzero status. A successful halt or normal completion returns status `0`.
+
+## Execution model
+
+The emulator reads and tokenizes the complete source file before running it.
+Labels are resolved to positions in the resulting instruction stream, and
+execution starts at `lbl main:` regardless of its position in the file. The
+program counter is internal to the emulator; it is not one of the assembly
+registers.
+
+Each instruction execution increments the 16-bit counter at memory address
+`0x0000` before the instruction runs. The counter wraps to zero after
+`0xFFFF`. A taken `goto` or conditional branch changes the next instruction
+position; an untaken conditional branch continues after its operands. Labels
+are not executable instructions. `slp` pauses the emulator thread for the
+requested number of milliseconds, so no instructions or display refreshes
+occur during that pause.
+
+`/D` and `/debug` are independent execution flags and may be supplied in
+either order, before or after the single source path. `/D` initializes the
+window and enables `DRAW`/`UPDATE`; without it, those instructions are
+no-ops. `/debug` prints label positions and the token stream before execution
+and enables Raylib trace logging. The `asmbi.cmd` launcher always appends
+`/debug`. Closing the display window stops the execution loop.
 
 ## Assembly source format
 
@@ -114,7 +138,8 @@ Label names are case-sensitive. Do not use a reserved mnemonic, a register spell
 
 ## Registers and values
 
-The emulator has sixteen unsigned 32-bit registers. Register names consist of lowercase `r` followed by one hexadecimal digit:
+The emulator has sixteen unsigned 32-bit registers. Register names consist of
+lowercase `r` followed by one hexadecimal digit:
 
 | Registers | Purpose |
 | --- | --- |
@@ -123,8 +148,28 @@ The emulator has sixteen unsigned 32-bit registers. Register names consist of lo
 | `r5`-`rb` | General-purpose registers. |
 | `rc` | Display control. When nonzero, zero-valued framebuffer words are rendered using the background color. |
 | `rd`-`rf` | General-purpose registers. |
+| `rr` | Special random-value source; each read generates a value rather than returning a persistent register value. |
 
-Registers are initialized to zero. Arithmetic instructions update the first register operand and wrap on overflow or underflow. Memory words are 16-bit even though registers and arithmetic values are 32-bit.
+The sixteen `r0`-`rf` registers are initialized to zero. Arithmetic
+instructions update the first register operand and wrap on overflow or
+underflow. Memory words are 16-bit even though registers and arithmetic
+values are 32-bit.
+
+`rr` is an additional special operand, not one of `r0`-`rf`. Each time an
+instruction reads `rr`, the emulator generates a new value using the C
+standard library `rand()` function and returns it. The generator is seeded
+once at startup from the current system-clock time; the result is
+platform-dependent and is not suitable for security-sensitive randomness.
+Writing to `rr` with `wr` is ignored. Use it as a source operand, not as a
+destination. For example:
+
+```asm
+wr r1, rr
+```
+
+This samples a value into `r1`; a later read of `rr` generates another value.
+The implementation applies `% 0xffffffff` to `rand()`, so the available
+range is also limited by the platform's `RAND_MAX`.
 
 ## Language instructions
 
@@ -137,7 +182,7 @@ All operands in the instruction table are required. For `wr`, arithmetic, and `s
 | `sub` | `sub register, value` | Subtracts the value from the destination register. |
 | `mult` | `mult register, value` | Multiplies the destination register by the value. |
 | `div` | `div register, value` | Integer-divides the destination register by the value. Division by zero is an error. |
-| `mod` | `mod register, value` | Integer modulo (c/c++ %) the destination register by the value.|
+| `mod` | `mod register, value` | Integer modulo (`%`) the destination register by the value. The divisor must be nonzero. |
 | `lbl` | `lbl name:` | Defines a unique branch target. Labels do not execute as instructions. |
 | `goto` | `goto name` | Jumps unconditionally to a label. |
 | `geq` | `geq left, right, name` | Jumps when `left` equals `right`. |
@@ -180,6 +225,9 @@ To issue a syscall, place its number in `r0`, set its input arguments, then exec
 The print syscalls flush output immediately and do not append a newline. Add a newline explicitly with `PRINT_CHAR` and the newline byte (`10`) if desired.
 
 Shift counts must be between 0 and 31 inclusive. A larger count is reported as an error and stops the program. Any syscall number outside `0`-`10` is also an error. Arithmetic instructions (`add`, `sub`, `mult`, and `div`) are language instructions, not syscall codes.
+
+`mod` is a language instruction, not a syscall. Its divisor is not checked by
+the emulator; do not use zero as the divisor.
 
 ## Memory and MMIO
 
@@ -232,7 +280,10 @@ Both display instructions are ignored when the emulator is run without `/D`. Whe
 
 ## Keyboard input
 
-The value at memory address `0x0001` is refreshed during the execution loop. With the display window enabled, the emulator checks for held keys in this order and writes the first matching key code:
+The value at memory address `0x0001` is refreshed during the execution loop.
+With the display window enabled, the emulator checks for held keys in this
+order and writes the first matching key code. Keyboard input is intended to
+be used with `/D`:
 
 | Keys | Value written to `0x0001` |
 | --- | --- |
