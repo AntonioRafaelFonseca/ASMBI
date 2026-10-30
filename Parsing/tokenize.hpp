@@ -163,7 +163,7 @@ inline token getToken(const std::string& s)
     else if(s == "UPDATE")     return {DISPLAY_UPDATE, 0};
     else if(s == ":")       return {COLON, 0};
     else if(s == ",")       return {COMMA, 0};
-    else if(s[0] == 'r') return {REGISTER, getReg(s)};
+    else if(s[0] == 'r' && s.length() == 2) return {REGISTER, getReg(s)};
     else if(
         s.find_first_not_of
         (

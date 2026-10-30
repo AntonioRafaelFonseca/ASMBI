@@ -24,6 +24,7 @@ g++ .\src\chip.cpp .\src\main.cpp -o main.exe `
 .\main.exe <program.asmbi> [/D] [/debug]
 ```
 
+- `.\asmbi.cmd <program.asmbi> [/D]` runs the executable beside the command file and enables `/debug`.
 - `/D` opens the 128 × 64 display window, enlarged 4×.
 - `/debug` shows each compiled output token's index, type, value, and source text, along with the addresses assigned to labels. It also enables Raylib's trace messages.
 - Supply exactly one program file. The `/D` and `/debug` flags can appear before or after it, in either order.

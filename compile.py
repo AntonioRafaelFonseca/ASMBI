@@ -12,7 +12,7 @@ def main():
     text_extensions = ('.cpp', '.c', '.cc', '.h', '.hpp', '.txt')
     
     # 1. Encontrar todos os ficheiros corretamente
-    for root, dirs, files in os.walk('.'):
+    for root, dirs, files in os.walk("."):
         # Ignora a pasta .git para não perder tempo a percorrê-la
         if '.git' in root:
             continue

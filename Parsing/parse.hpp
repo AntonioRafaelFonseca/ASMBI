@@ -9,6 +9,9 @@
 #include <sstream>
 #include <bitset>
 #include <iomanip>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 struct LBL
 {
@@ -51,25 +54,58 @@ inline std::string replaceStr(std::string& c, const std::string a, const std::st
 
 inline std::string readsimplifyCode(const char* filePath)
 {
+  
   std::ifstream file;
-  file.open(filePath);
+  std::string CfilePath = "";
+
+  fs::path cwd = fs::current_path();
+
+  if(fs::path(filePath).is_absolute())
+  {
+    CfilePath = filePath;
+  }
+  else
+  {
+    CfilePath = cwd.string() + "/" + filePath;
+  }
+
+  file.open(CfilePath);
   if(!file.is_open())
   {
-    std::cerr << "\n[->] Could not open file: " << filePath;
+    std::cerr << "\n[->] Could not open file: " << CfilePath;
     exit(1);
   }
   std::string dest = "";
   char c;
-  bool stoped = 0;
-  bool multilineStopped = 0;
+  bool lineComment = false;
+  bool blockComment = false;
   while (file.get(c))
   {
-    if(c=='#') stoped = 1;
-    if(c=='\n') stoped = 0;
-    if(c=='/') multilineStopped = 1;
-    if(c==92) multilineStopped = 0;
+    if (lineComment)
+    {
+      if (c == '\n')
+      {
+        lineComment = false;
+        dest.append(1, c);
+      }
+      continue;
+    }
 
-    if(!(stoped || multilineStopped)) dest.append(1, c);
+    if (blockComment)
+    {
+      if (c == '\\')
+        blockComment = false;
+      else if (c == '\n')
+        dest.append(1, c);
+      continue;
+    }
+
+    if (c == '#')
+      lineComment = true;
+    else if (c == '/')
+      blockComment = true;
+    else
+      dest.append(1, c);
   }
   replaceStr(dest, "  ", "\n");
   replaceStr(dest, " ", "\n");

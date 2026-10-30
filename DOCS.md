@@ -48,6 +48,12 @@ The program accepts exactly one assembly source path and the optional `/D` and `
 .\main.exe /debug .\main.asmbi /D
 ```
 
+The `asmbi.cmd` launcher runs the `main.exe` beside it and enables `/debug` automatically:
+
+```powershell
+.\asmbi.cmd .\main.asmbi
+```
+
 | Option | Effect |
 | --- | --- |
 | `/D` | Initializes the Raylib window at 128 x 64 pixels, displayed at 4x scale and targeted at 60 FPS. |

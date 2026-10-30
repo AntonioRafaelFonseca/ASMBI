@@ -9,6 +9,7 @@
 
 int main(int argc, char** argv)
 {
+  system("cls");
   const char* programPath = nullptr;
   bool displayFlag = false;
   bool debugMode = false;
@@ -19,6 +20,7 @@ int main(int argc, char** argv)
     if (argument == "/D")
       displayFlag = true;
     else if (argument == "/debug")
+      
       debugMode = true;
     else if (!argument.empty() &&
              (argument[0] == '/' || argument[0] == '-'))
@@ -52,6 +54,7 @@ int main(int argc, char** argv)
             << "\n========================================\n\n";
 
   SetTraceLogLevel(debugMode ? 0 : 5);
+  if(debugMode) std::cout << "\nDEBUG MODE ON\n";
   if (displayFlag)
   {
     InitWindow(128 * DISPLAY_SCALE, 64 * DISPLAY_SCALE, "ASMBI Display");
