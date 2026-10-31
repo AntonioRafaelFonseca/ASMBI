@@ -41,24 +41,31 @@ g++ .\src\chip.cpp .\src\main.cpp -o main.exe `
 
 ## Run the emulator
 
-The program accepts exactly one assembly source path and the optional `/D` and `/debug` switches. Switches can appear before or after the path:
+The program accepts exactly one assembly source path and the optional `/D`, `/debug` and `/log` switches. Switches can appear before or after the path:
 
 ```powershell
 .\main.exe .\main.asmbi
-.\main.exe .\main.asmbi /D
-.\main.exe /debug .\main.asmbi /D
 ```
-
-The `asmbi.cmd` launcher runs the `main.exe` beside it and enables `/debug` automatically:
+_Runs the program with out any logs, display or debug features_
+```powershell
+.\main.exe .\main.asmbi /D
+```
+_Runs the program with out any logs or debug features but with an integrated display_
+```powershell
+.\main.exe .\main.asmbi /D /debug /logs
+```
+_Runs the program with debug features and display_
 
 ```powershell
-.\asmbi.cmd .\main.asmbi
+.\main.exe .\main.asmbi /debug /log
 ```
+_Runs the program only with debug features_
 
 | Option | Effect |
 | --- | --- |
 | `/D` | Initializes the Raylib window at 128 x 64 pixels, displayed at 4x scale and targeted at 60 FPS. |
 | `/debug` | Prints the compiled token stream and label addresses before execution, and enables Raylib trace logging. |
+| `/logs` | Enables every log not originated from asmbi file including raylib and debug logs if enabled. |
 
 An omitted source path, unknown option, or second source path is rejected with usage information and exit status `2`. Runtime and source errors return a nonzero status. A successful halt or normal completion returns status `0`.
 
