@@ -210,7 +210,7 @@ inline std::vector<std::string> getArrayString(const std::string& s)
     return outVec;
 }
 
-inline std::vector<token> tokenize(const char* filepath, bool debugMode)
+inline std::vector<token> tokenize(const char* filepath, bool debugMode, bool logMode)
 {
     std::vector<token> outVec;
     std::vector<std::string> sourceVec;
@@ -396,12 +396,12 @@ inline std::vector<token> tokenize(const char* filepath, bool debugMode)
 
     if(debugMode)
     {
-        std::cout << "\n==================\n";
-        std::cout << "   Labels Found   \n";
-        std::cout << "==================\n";
+        if(logMode) std::cout << "\n==================\n";
+        if(logMode) std::cout << "   Labels Found   \n";
+        if(logMode) std::cout << "==================\n";
         for(size_t i = 0; i < GlobalLabels.size(); i++)
         {
-            std::cout << "\nLabel: " << GlobalLabels.at(i).name << " at PC-Index: " << GlobalLabels.at(i).pcIndex <<"\n";
+            if(logMode) std::cout << "\nLabel: " << GlobalLabels.at(i).name << " at PC-Index: " << GlobalLabels.at(i).pcIndex <<"\n";
         }
     
         constexpr int indexWidth = 10;
@@ -409,7 +409,7 @@ inline std::vector<token> tokenize(const char* filepath, bool debugMode)
         constexpr int valueWidth = 12;
         const std::string separator(indexWidth + typeWidth + valueWidth + 32, '-');
 
-        std::cout << "\nASMBI DEBUG - OUTPUT TOKENS\n"
+        if(logMode) std::cout << "\nASMBI DEBUG - OUTPUT TOKENS\n"
                   << separator << '\n'
                   << std::left << std::setw(indexWidth) << "OUT INDEX"
                   << std::setw(typeWidth) << "TOKEN TYPE"
@@ -418,12 +418,12 @@ inline std::vector<token> tokenize(const char* filepath, bool debugMode)
                   << separator << '\n';
         for(size_t i = 0; i < outVec.size(); i++)
         {
-            std::cout << std::left << std::setw(indexWidth) << i
+            if(logMode) std::cout << std::left << std::setw(indexWidth) << i
                       << std::setw(typeWidth) << GetTokenTypeSTR(outVec.at(i).type)
                       << std::right << std::setw(valueWidth) << outVec.at(i).value
                       << "   " << std::left << sourceVec.at(i) << '\n';
         }
-        std::cout << separator << "\n\n" << std::flush;
+        if(logMode) std::cout << separator << "\n\n" << std::flush;
     }
     return outVec;
 }

@@ -17,17 +17,21 @@ int main(int argc, char** argv)
 
   
   const char* programPath = nullptr;
-  bool displayFlag = false;
-  bool debugMode = false;
+  bool displayFlag        = false;
+  bool debugMode          = false;
+  bool logMode            = false;
 
   for (int i = 1; i < argc; ++i)
   {
     const std::string argument = argv[i];
     if (argument == "/D")
       displayFlag = true;
-    else if (argument == "/debug")
-      
+    else if (argument == "/debug"){
       debugMode = true;
+    }
+    else if (argument == "/log"){
+      logMode = true;
+    }
     else if (!argument.empty() &&
              (argument[0] == '/' || argument[0] == '-'))
     {
@@ -55,12 +59,11 @@ int main(int argc, char** argv)
   }
 
   chip c;
-  std::cout << "========================================\n"
+  if(logMode) std::cout << "================================================================================\n"
             << "Compiling & Executing file: " << programPath
-            << "\n========================================\n\n";
+            << "\n==============================================================================\n\n";
 
-  SetTraceLogLevel(debugMode ? 0 : 5);
-  if(debugMode) std::cout << "\nDEBUG MODE ON\n";
+  SetTraceLogLevel((debugMode && logMode) ? 0 : 5);
   if (displayFlag)
   {
     InitWindow(128 * DISPLAY_SCALE, 64 * DISPLAY_SCALE, "ASMBI Display");
@@ -73,7 +76,7 @@ int main(int argc, char** argv)
   }
 
   const bool executionSucceeded =
-      execute(programPath, c, displayFlag, debugMode);
+      execute(programPath, c, displayFlag, debugMode, logMode);
 
   if (displayFlag)
     CloseWindow();

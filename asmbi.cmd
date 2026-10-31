@@ -7,5 +7,5 @@ if not exist "%emulator%" (
     exit /b 1
 )
 
-"%emulator%" %* /debug
+"%emulator%" %*
 exit /b %errorlevel%

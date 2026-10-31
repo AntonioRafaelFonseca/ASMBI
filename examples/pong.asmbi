@@ -1,0 +1,259 @@
+lbl main:
+# Enable background rendering
+wr rc, 1
+
+# Set background to black
+wr r1, 0
+wr r2, 49149
+wr r0, 1
+syscall
+
+# ==================================================
+# MAIN GAME LOOP
+# ==================================================
+
+lbl game_loop:
+
+# ------------------------------------------
+# READ KEYBOARD
+# ------------------------------------------
+
+wr r2, 1
+wr r0, 2
+syscall
+
+# Left arrow = 263
+geq r1, 263, move_left
+
+# Right arrow = 262
+geq r1, 262, move_right
+
+goto input_done
+
+lbl move_left:
+
+# Prevent leaving the screen
+glt r5, 2, input_done
+sub r5, 2
+goto input_done
+
+lbl move_right:
+
+# Maximum basket position = 115
+ggte r5, 115, input_done
+add r5, 2
+
+lbl input_done:
+
+# ------------------------------------------
+# CLEAR PREVIOUS BASKET
+# ------------------------------------------
+
+# Rectangle:
+# X = previous player X through X+12
+# Y = 59 through 61
+
+wr rd, r9
+wr r3, r9
+add r3, 13
+
+wr rf, 59
+wr r4, 62
+
+lbl clear_basket_y:
+
+lbl clear_basket_x:
+
+# Calculate framebuffer address
+wr r1, rf
+mult r1, 128
+add r1, rd
+add r1, 49150
+
+wr r2, r1
+wr r1, 0
+wr r0, 1
+syscall
+
+add rd, 1
+glt rd, r3, clear_basket_x
+
+wr rd, r9
+add rf, 1
+glt rf, r4, clear_basket_y
+
+# ------------------------------------------
+# CLEAR PREVIOUS STAR
+# ------------------------------------------
+
+wr rd, ra
+wr r3, ra
+add r3, 3
+
+wr rf, rb
+wr r4, rb
+add r4, 3
+
+lbl clear_star_y:
+
+lbl clear_star_x:
+
+wr r1, rf
+mult r1, 128
+add r1, rd
+add r1, 49150
+
+wr r2, r1
+wr r1, 0
+wr r0, 1
+syscall
+
+add rd, 1
+glt rd, r3, clear_star_x
+
+wr rd, ra
+add rf, 1
+glt rf, r4, clear_star_y
+
+# ------------------------------------------
+# MOVE STAR DOWN
+# ------------------------------------------
+
+add r7, 1
+
+# Check whether star reached basket height
+glt r7, 57, star_not_caught
+
+# Check horizontal collision
+glt r6, r5, star_not_caught
+
+wr r1, r5
+add r1, 12
+ggt r6, r1, star_not_caught
+
+# ------------------------------------------
+# STAR CAUGHT!
+# ------------------------------------------
+
+add r8, 1
+
+# Print score
+wr r1, r8
+wr r0, 9
+syscall
+
+wr r1, 10
+wr r0, 10
+syscall
+
+goto respawn_star
+
+lbl star_not_caught:
+
+# Check whether star missed basket
+ggt r7, 61, respawn_star
+
+goto update_old_positions
+
+# ------------------------------------------
+# RESPAWN STAR
+# ------------------------------------------
+
+lbl respawn_star:
+
+wr r7, 0
+
+# Move star horizontally for next round
+wr r6, rr
+mod r6, 120
+
+# ------------------------------------------
+# SAVE PREVIOUS POSITIONS
+# ------------------------------------------
+
+lbl update_old_positions:
+
+wr r9, r5
+wr ra, r6
+wr rb, r7
+
+# ==================================================
+# DRAW BASKET
+# ==================================================
+
+# Basket color: CYAN (RGB565 0x07FF)
+# Rectangle: 13 x 3 pixels
+
+wr rd, r5
+wr r3, r5
+add r3, 13
+
+wr rf, 59
+wr r4, 62
+
+lbl draw_basket_y:
+
+lbl draw_basket_x:
+
+# Address = 0xBFFE + Y*128 + X
+wr r2, rf
+mult r2, 128
+add r2, rd
+add r2, 49150
+
+wr r1, 2047
+wr r0, 1
+syscall
+
+add rd, 1
+glt rd, r3, draw_basket_x
+
+wr rd, r5
+add rf, 1
+glt rf, r4, draw_basket_y
+
+# ==================================================
+# DRAW STAR
+# ==================================================
+
+# Star color: YELLOW (RGB565 0xFFE0)
+# Simple 3 x 3 pixel star
+
+wr rd, r6
+wr r3, r6
+add r3, 3
+
+wr rf, r7
+wr r4, r7
+add r4, 3
+
+lbl draw_star_y:
+
+lbl draw_star_x:
+
+wr r2, rf
+mult r2, 128
+add r2, rd
+add r2, 49150
+
+wr r1, 65504
+wr r0, 1
+syscall
+
+add rd, 1
+glt rd, r3, draw_star_x
+
+wr rd, r6
+add rf, 1
+glt rf, r4, draw_star_y
+
+# ------------------------------------------
+# PRESENT FRAME
+# ------------------------------------------
+
+DRAW
+
+# Small delay
+slp 35
+
+goto game_loop

@@ -85,7 +85,7 @@ inline int updateDisp(bool debugMode)
     EndDrawing();
     return WindowShouldClose();
 }
-inline int drawDisplay(bool display, chip& destChip, bool debugMode)
+inline int drawDisplay(bool display, chip& destChip, bool debugMode, bool logMode)
 {
         if (WindowShouldClose())
         {
@@ -126,9 +126,9 @@ inline int drawDisplay(bool display, chip& destChip, bool debugMode)
     return 0;
 }
 
-inline bool execute(const char* filepath, chip& destChip, bool display, bool debugMode)
+inline bool execute(const char* filepath, chip& destChip, bool display, bool debugMode, bool logMode)
 {
-    std::vector<token> tokens = tokenize(filepath, debugMode);
+    std::vector<token> tokens = tokenize(filepath, debugMode, logMode);
 
 
     if (display)
@@ -166,7 +166,7 @@ inline bool execute(const char* filepath, chip& destChip, bool display, bool deb
         {
             if (current.type == DISPLAY_DRAW)
             {
-                if (drawDisplay(display, destChip, debugMode) == 1) break;
+                if (drawDisplay(display, destChip, debugMode, logMode) == 1) break;
             }
             else if (current.type == DISPLAY_UPDATE)
             {

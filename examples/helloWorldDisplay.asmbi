@@ -1,0 +1,359 @@
+lbl main:
+
+wr r2, 0xbffe
+add r2, 640
+add r2, 5
+
+wr r0, 1
+
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 64
+add r2, 32
+add r2, 8
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 64
+add r2, 32
+add r2, 8
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 64
+add r2, 32
+add r2, 8
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 64
+add r2, 32
+add r2, 8
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 64
+add r2, 32
+add r2, 16
+add r2, 8
+add r2, 4
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 128
+add r2, 64
+add r2, 32
+add r2, 8
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 4
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 101
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 101
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 101
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 106
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 4
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 3
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 2
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 1
+wr r1, 0xffff
+syscall
+add r2, 5
+wr r1, 0xffff
+syscall
+
+
+
+DRAW
+UPDATE
+goto main

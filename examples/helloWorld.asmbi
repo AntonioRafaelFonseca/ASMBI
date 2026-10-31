@@ -1,0 +1,36 @@
+# print each char
+lbl main:
+wr r0, 10
+
+
+wr r1, 72
+syscall
+wr r1, 101
+syscall
+wr r1, 108
+syscall
+wr r1, 108
+syscall
+wr r1, 111
+syscall
+wr r1, 44
+syscall
+wr r1, 32
+syscall
+wr r1, 87
+syscall
+wr r1, 111
+syscall
+wr r1, 114
+syscall
+wr r1, 108
+syscall
+wr r1, 100
+syscall
+wr r1, 33
+syscall
+wr r1, 10
+syscall
+
+wr r0, 0
+syscall
