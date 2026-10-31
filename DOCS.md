@@ -247,8 +247,9 @@ Memory consists of 65,536 addressable words, each 16 bits wide. Memory is zero-i
 | `0x0002`-`0xBFFC` | General memory | Available for program data. |
 | `0xBFFD` | Display background color | RGB565 background value used when `rc` is nonzero. |
 | `0xBFFE`-`0xDFFD` | Visible framebuffer | 8,192 words, one for each pixel in the 128 x 64 display. |
-| `0xDFFE`-`0xFFFD` | Beyond visible framebuffer | Ordinary memory; also scanned by the renderer but lies outside the visible 64 rows. |
-| `0xFFFE`-`0xFFFF` | General memory | Valid ordinary memory, not scanned by the renderer. |
+| `0xDFFE`-`0xFFFF` | General memory | Valid ordinary memory, not scanned by the renderer. |
+
+
 
 Use `SAVE_MEMORY` and `READ_MEMORY` to write and read words. `SAVE_MEMORY` truncates a register value to its low 16 bits. `READ_MEMORY` zero-extends the 16-bit word into the 32-bit destination register.
 

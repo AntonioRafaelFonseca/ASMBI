@@ -68,7 +68,7 @@ inline int GetKeyDown()
 }
 
 const size_t startAddr = 0xBFFE;
-const size_t endAddr = 0xFFFE;
+const size_t endAddr = 0xDFFD;
 
 Image imgBuff{};
 Texture txtureBuff{};
